@@ -27,21 +27,28 @@ def run(args: argparse.Namespace) -> str:
     # If we have a profile, use that.
     if args.profile:
         logger.debug("Using CLI-provided profile.")
-        session = boto3.Session(profile_name=args.profile,
-                                region_name=args.region)
+        session_args={"profile_name": args.profile}
+        if 'region' in args  and args.region is not None:
+            session_args['region_name'] = args.region
+        session = boto3.Session(**session_args)
         logger.info("Profile session using \"%s\" established.", args.profile)
     # Otherwise, use the command line arguments
     elif args.access_key_id:
         logger.debug("Using CLI-provided credentials.")
-        session = boto3.Session(aws_access_key_id=args.access_key_id,
-                                aws_secret_access_key=args.secret_access_key,
-                                aws_session_token=args.session_token,
-                                region_name=args.region)
+        session_args={"aws_access_key_id": args.access_key_id,
+                      "aws_secret_access_key": args.secret_access_key,
+                      "aws_session_token": args.session_token}
+        if 'region' in args  and args.region is not None:
+            session_args['region_name'] = args.region
+        session = boto3.Session(**session_args)
         logger.info("Session using credential variables established.")
     # Otherwise, let boto figure it out.
     else:
         logger.debug("No credentials detected, forwarding to Boto3.")
-        session = boto3.Session(region_name=args.region)
+        session_args={}
+        if 'region' in args  and args.region is not None:
+            session_args['region_name'] = args.region
+        session = boto3.Session(**session_args)
         logger.info("Boto3 session established.")
 
     # Get to temporary credentials
@@ -54,11 +61,13 @@ def run(args: argparse.Namespace) -> str:
                                RoleSessionName="aws_consoler")
         creds = resp["Credentials"]
         logger.debug("Role assumed, setting up session.")
-        session = boto3.Session(
-            aws_access_key_id=creds["AccessKeyId"],
-            aws_secret_access_key=creds["SecretAccessKey"],
-            aws_session_token=creds["SessionToken"])
-        logger.info("New role session established.")
+        session_args={"aws_access_key_id": creds["AccessKeyId"],
+                      "aws_secret_access_key": creds["SecretAccessKey"],
+                      "aws_session_token": creds["SessionToken"],
+                      "region_name": 'us-east-1'}
+        if 'region' in args  and args.region is not None:
+            session_args['region_name'] = args.region
+        session = boto3.Session(**session_args)
     # If we are still a permanent IAM credential, use sts:GetFederationToken
     elif session.get_credentials().get_frozen_credentials() \
             .access_key.startswith("AKIA"):
@@ -75,11 +84,13 @@ def run(args: argparse.Namespace) -> str:
                 ])
             logger.debug("Federation session created, setting up session.")
             creds = resp["Credentials"]
-            session = boto3.Session(
-                aws_access_key_id=creds["AccessKeyId"],
-                aws_secret_access_key=creds["SecretAccessKey"],
-                aws_session_token=creds["SessionToken"])
-            logger.info("New federated session established.")
+            session_args={"aws_access_key_id": creds["AccessKeyId"],
+                          "aws_secret_access_key": creds["SecretAccessKey"],
+                          "aws_session_token": creds["SessionToken"],
+                          "region_name": 'us-east-1'}
+            if 'region' in args  and args.region is not None:
+                session_args['region_name'] = args.region
+            session = boto3.Session(**session_args)
         except ClientError:
             message = "Error obtaining federation token from STS. Ensure " \
                       "the IAM user has sts:GetFederationToken permissions, " \

@@ -8,6 +8,7 @@ import logging
 from requests.exceptions import HTTPError
 
 from aws_consoler.logic import run
+# from logic import run
 
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 
