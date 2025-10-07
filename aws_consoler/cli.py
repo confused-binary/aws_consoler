@@ -5,10 +5,10 @@ import argparse
 import sys
 import webbrowser
 import logging
+import pyperclip
 from requests.exceptions import HTTPError
 
 from aws_consoler.logic import run
-# from logic import run
 
 LOG_FORMAT = "%(asctime)s [%(name)s] %(levelname)s: %(message)s"
 
@@ -71,6 +71,9 @@ def main(argv=sys.argv[1:]):
     gen_grp.add_argument(
         "-o", "--open", action="store_true",
         help="Open the generated link in your system's default browser.")
+    gen_grp.add_argument(
+        "-c", "--clipboard", action="store_true",
+        help="Copy url to clipboard.")
     gen_grp.add_argument(
         "-v", "--verbose", action="count",
         help="Verbosity, repeat for more verbose output (up to 3)")
@@ -145,6 +148,8 @@ def main(argv=sys.argv[1:]):
         if args.open:
             logger.info("Opening browser.")
             webbrowser.open(url, new=2)
+        elif args.clipboard:
+            pyperclip.copy(url)
         else:
             print(url)
     except PermissionError as e:
